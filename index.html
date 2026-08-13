@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RiskShield - Portal Integral de Gestión de Riesgo</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .active-tab {
+            border-bottom: 3px solid #2563eb;
+            color: #2563eb;
+            font-weight: 600;
+        }
+        .chat-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .chat-scroll::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 3px;
+        }
+        .typing-dot {
+            animation: typing-blink 1.4s infinite both;
+        }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing-blink {
+            0%, 80%, 100% { opacity: 0.25; }
+            40% { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans flex flex-col min-h-screen">
+
+    <!-- Navbar -->
+    <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-shield-halved text-blue-500 text-2xl"></i>
+                <span class="text-xl font-bold tracking-tight">Risk<span class="text-blue-500">Shield</span></span>
+            </div>
+            <nav class="hidden md:flex space-x-6 text-sm font-medium">
+                <a href="#sistemas" class="hover:text-blue-400 transition">Sistemas de Riesgo</a>
+                <a href="#chatbot" class="hover:text-blue-400 transition">Asistente Virtual</a>
+            </nav>
+            <a href="#chatbot" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
+                Consultar Chatbot
+            </a>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white py-10 px-4 text-center">
+        <div class="max-w-4xl mx-auto">
+            <span class="bg-blue-900/60 text-blue-300 text-xs font-semibold px-3 py-1 rounded-full border border-blue-700">Plataforma de Cumplimiento & Riesgos</span>
+            <h1 class="text-3xl sm:text-4xl font-bold mt-3 mb-2">Gestión Integral de Sistemas de Administración de Riesgo</h1>
+            <p class="text-slate-300 text-sm mb-4">Base del conocimiento sobre SARLAFT, SARO, SARC, SARI, leyes, sanciones y modus operandi.</p>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
+
+        <!-- Sistemas de Riesgo Explorer -->
+        <section id="sistemas" class="mb-12">
+            <div class="mb-4">
+                <h2 class="text-2xl font-bold text-slate-900">Sistemas de Administración de Riesgo</h2>
+                <p class="text-slate-500 text-sm">Selecciona un sistema para consultar su estructura básica.</p>
+            </div>
+
+            <!-- Tabs -->
+            <div class="border-b border-slate-200 flex space-x-6 overflow-x-auto mb-4">
+                <button onclick="switchTab('sarlaft')" id="tab-sarlaft" class="active-tab pb-3 text-sm font-medium whitespace-nowrap px-1">
+                    <i class="fa-solid fa-user-shield mr-2"></i>SARLAFT / PADM
+                </button>
+                <button onclick="switchTab('saro')" id="tab-saro" class="pb-3 text-sm font-medium text-slate-500 hover:text-slate-700 whitespace-nowrap px-1">
+                    <i class="fa-solid fa-gears mr-2"></i>SARO
+                </button>
+                <button onclick="switchTab('sarc')" id="tab-sarc" class="pb-3 text-sm font-medium text-slate-500 hover:text-slate-700 whitespace-nowrap px-1">
+                    <i class="fa-solid fa-wallet mr-2"></i>SARC
+                </button>
+                <button onclick="switchTab('sari')" id="tab-sari" class="pb-3 text-sm font-medium text-slate-500 hover:text-slate-700 whitespace-nowrap px-1">
+                    <i class="fa-solid fa-chart-line mr-2"></i>SARI / SARM
+                </button>
+            </div>
+
+            <!-- Tab Content Panel -->
+            <div id="system-content" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <!-- Content injects dynamically via JS -->
+            </div>
+        </section>
+
+        <!-- Banco de Preguntas Frecuentes (del PDF) -->
+        <section id="faq" class="mb-12">
+            <div class="mb-4">
+                <h2 class="text-2xl font-bold text-slate-900">Banco de Preguntas Frecuentes</h2>
+                <p class="text-slate-500 text-sm">Preguntas y respuestas base sobre normativa de riesgo y cumplimiento.</p>
+            </div>
+            <div id="faq-list" class="space-y-3"></div>
+        </section>
+
+        <!-- Interactive Chatbot Section -->
+        <section id="chatbot" class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+            <div class="lg:col-span-1">
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-5">
+                    <div class="flex items-center space-x-3 mb-3">
+                        <div class="bg-blue-600 text-white p-2 rounded-lg">
+                            <i class="fa-solid fa-robot text-xl"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-900">RiskBot Avanzado</h3>
+                    </div>
+                    <p class="text-slate-600 text-xs mb-4">
+                        Consúltame sobre normativas, penas, consecuencias reputacionales, tipos de riesgo asociados y modus operandi.
+                    </p>
+
+                    <!-- Suggested Prompts -->
+                    <div class="text-xs text-slate-600 space-y-2">
+                        <p class="font-semibold text-slate-800">Preguntas sugeridas:</p>
+                        <button onclick="sendSuggested('¿Cuáles son las consecuencias o sanciones por incumplir el SARLAFT?')" class="block w-full text-left bg-white border border-blue-200 hover:bg-blue-100 p-2 rounded text-blue-700 transition">
+                            • Sanciones y consecuencias del SARLAFT
+                        </button>
+                        <button onclick="sendSuggested('¿Cuáles son los modus operandi más comunes en lavado de activos?')" class="block w-full text-left bg-white border border-blue-200 hover:bg-blue-100 p-2 rounded text-blue-700 transition">
+                            • Modus operandi y tipologías delictivas
+                        </button>
+                        <button onclick="sendSuggested('¿Qué es la Lista Clinton y qué debo hacer si un cliente aparece en ella?')" class="block w-full text-left bg-white border border-blue-200 hover:bg-blue-100 p-2 rounded text-blue-700 transition">
+                            • Listas restrictivas y debida diligencia
+                        </button>
+                        <button onclick="sendSuggested('¿Cuáles son las funciones del Oficial de Cumplimiento?')" class="block w-full text-left bg-white border border-blue-200 hover:bg-blue-100 p-2 rounded text-blue-700 transition">
+                            • Rol del Oficial de Cumplimiento
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Window -->
+            <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-[550px]">
+                <div class="bg-slate-900 text-white p-4 rounded-t-xl flex justify-between items-center">
+                    <div class="flex items-center space-x-2">
+                        <span id="status-dot" class="w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse"></span>
+                        <span class="font-medium text-sm">Chatbot de Consulta Legal y Normativa</span>
+                    </div>
+                    <span id="status-badge" class="text-xs bg-slate-800 text-slate-300 px-2.5 py-1 rounded">IA en línea</span>
+                </div>
+
+                <!-- Chat History -->
+                <div id="chat-messages" class="flex-grow p-4 overflow-y-auto space-y-4 chat-scroll">
+                    <div class="flex items-start space-x-3">
+                        <div class="bg-blue-600 text-white rounded-full p-2 text-xs">
+                            <i class="fa-solid fa-robot"></i>
+                        </div>
+                        <div class="bg-slate-100 text-slate-800 p-3.5 rounded-2xl rounded-tl-none text-sm max-w-[85%]">
+                            ¡Hola! Soy <strong>RiskBot</strong>. Tengo información sobre <strong>leyes, sanciones, modus operandi, tipos de riesgo</strong> y la operación de SARLAFT, SARO, SARC y SARI. ¿Qué deseas consultar?
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Box -->
+                <form id="chat-form" onsubmit="handleChatSubmit(event)" class="p-3 border-t border-slate-200 flex gap-2">
+                    <input type="text" id="chat-input" placeholder="Pregunta sobre leyes, consecuencias, modus operandi o riesgos..."
+                           class="flex-grow border border-slate-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1">
+                        <span>Enviar</span> <i class="fa-solid fa-paper-plane text-xs"></i>
+                    </button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 text-xs py-6 border-t border-slate-800 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p>© 2026 RiskShield Portal. Diseñado para la gestión y consulta avanzada de Sistemas de Administración de Riesgo.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript logic -->
+    <script>
+        // ============================================================
+        // Data for Systems (pestañas SARLAFT / SARO / SARC / SARI)
+        // ============================================================
+        const systemData = {
+            sarlaft: {
+                title: "SARLAFT - Lavado de Activos y Financiación del Terrorismo",
+                desc: "Previene la introducción de capitales ilícitos en el sistema financiero o la canalización de recursos para actividades terroristas.",
+                norm: "Circular Externa 027 y 055 de la SuperFinanciera / UIAF",
+                etapas: ["1. Identificación del Riesgo", "2. Medición o Evaluación", "3. Control del Riesgo", "4. Monitoreo Continuo"],
+                elementos: ["Políticas y Procedimientos", "Estructura Organizacional (Oficial de Cumplimiento)", "Órganos de Control", "Infraestructura Tecnológica"]
+            },
+            saro: {
+                title: "SARO - Sistema de Administración del Riesgo Operativo",
+                desc: "Gestiona pérdidas potenciales derivadas de fallas humanas, deficiencias en procesos internos, tecnología o eventos externos.",
+                norm: "Circular Externa 041 de la Superintendencia Financiera",
+                etapas: ["1. Identificación de Fallas", "2. Medición (Frecuencia e Impacto)", "3. Control / Mitigación", "4. Monitoreo y Reporte"],
+                elementos: ["Manual de Riesgo Operativo", "Registro de Eventos de Pérdida", "Planes de Continuidad del Negocio (BCP)", "Capacitación"]
+            },
+            sarc: {
+                title: "SARC - Sistema de Administración del Riesgo de Crédito",
+                desc: "Evalúa la probabilidad de incumplimiento de deudores y calcula las pérdidas esperadas sobre las carteras de crédito.",
+                norm: "Capítulo II de la Circular Básica Contable y Financiera",
+                etapas: ["1. Evaluación del Otorgamiento", "2. Calificación de Cartera", "3. Constitución de Provisiones", "4. Recuperación de Cartera"],
+                elementos: ["Políticas de Crédito y Scoring", "Modelos de Pérdida Esperada", "Garantías y Colaterales", "Monitoreo Contable"]
+            },
+            sari: {
+                title: "SARI / SARM - Riesgo de Mercado e Inversiones",
+                desc: "Mide y controla las pérdidas económicas derivadas de fluctuaciones en variables de mercado (tasas de interés, divisas, acciones).",
+                norm: "Capítulo XXI de la Circular Básica Contable y Financiera",
+                etapas: ["1. Identificación de Factores de Mercado", "2. Medición VaR (Valor en Riesgo)", "3. Establecimiento de Límites", "4. Monitoreo y Stress Testing"],
+                elementos: ["Límites de Inversión", "Pruebas de Tensión (Stress Tests)", "Comité de Riesgos", "Sistemas de Información Front/Back Office"]
+            }
+        };
+
+        function switchTab(systemKey) {
+            document.querySelectorAll('[id^="tab-"]').forEach(btn => {
+                btn.className = "pb-3 text-sm font-medium text-slate-500 hover:text-slate-700 whitespace-nowrap px-1";
+            });
+            document.getElementById(`tab-${systemKey}`).className = "active-tab pb-3 text-sm font-medium whitespace-nowrap px-1";
+
+            const data = systemData[systemKey];
+            const contentDiv = document.getElementById('system-content');
+
+            contentDiv.innerHTML = `
+                <div class="mb-4">
+                    <span class="text-xs bg-blue-100 text-blue-800 font-semibold px-2.5 py-0.5 rounded">Normativa: ${data.norm}</span>
+                    <h3 class="text-xl font-bold text-slate-900 mt-2">${data.title}</h3>
+                    <p class="text-slate-600 text-sm mt-1">${data.desc}</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                        <h4 class="font-bold text-slate-800 text-sm mb-3 flex items-center">
+                            <i class="fa-solid fa-list-check text-blue-600 mr-2"></i>Etapas Fundamentales
+                        </h4>
+                        <ul class="space-y-2 text-xs text-slate-700">
+                            ${data.etapas.map(e => `<li class="flex items-center"><i class="fa-solid fa-angle-right text-blue-500 mr-2"></i>${e}</li>`).join('')}
+                        </ul>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                        <h4 class="font-bold text-slate-800 text-sm mb-3 flex items-center">
+                            <i class="fa-solid fa-cubes text-blue-600 mr-2"></i>Componentes de Estructura
+                        </h4>
+                        <ul class="space-y-2 text-xs text-slate-700">
+                            ${data.elementos.map(el => `<li class="flex items-center"><i class="fa-solid fa-check text-green-500 mr-2"></i>${el}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ============================================================
+        // Banco de preguntas y respuestas (basado en el PDF)
+        // Sirve como: (1) contenido visible en la sección FAQ,
+        // y (2) respaldo local del chatbot si la IA no responde.
+        // ============================================================
+        const faqBank = [
+            {
+                keys: ["carcel", "prision", "pena", "articulo 323", "lavado de activos"],
+                question: "¿Cuál es la pena de cárcel por lavado de activos en Colombia y qué ley lo regula?",
+                answer: `El delito de Lavado de Activos está tipificado en el <strong>Artículo 323 del Código Penal Colombiano</strong> (Ley 599 de 2000, modificado por la Ley 1762 de 2015).<br>
+                • <strong>Pena de Prisión:</strong> De 10 a 30 años de cárcel.<br>
+                • <strong>Multa Económica Penal:</strong> De 650 a 50.000 SMMLV.<br>
+                • <strong>Agravantes (Art. 324):</strong> La pena aumenta de un tercio a la mitad si se usan operaciones de comercio exterior o de cambio.<br>
+                • <strong>Pena Accesoria:</strong> Inhabilitación para el ejercicio de derechos y funciones públicas por el mismo tiempo que dure la pena.`
+            },
+            {
+                keys: ["multa", "sancion", "sarlaft", "sagrilaft", "superfinanciera", "supersociedades"],
+                question: "¿Cuáles son las multas para una empresa o directivo por no implementar SARLAFT o SAGRILAFT?",
+                answer: `Depende de la entidad de supervisión:<br>
+                • <strong>SuperFinanciera</strong> (Art. 208 EOSF): multas institucionales y personales de hasta $1.000 millones de pesos (reajustables anualmente).<br>
+                • <strong>SuperSociedades - SAGRILAFT</strong> (Art. 86 Ley 222 de 1995): multas de hasta 200 SMMLV a la sociedad, Oficial de Cumplimiento, Revisor Fiscal o Administradores.<br>
+                • <strong>Medidas adicionales:</strong> remoción del cargo y suspensión o revocatoria de la autorización de funcionamiento.`
+            },
+            {
+                keys: ["ros", "uiaf", "reserva legal", "tipping"],
+                question: "¿Qué norma regula el envío del ROS a la UIAF y la reserva legal?",
+                answer: `• <strong>Obligación de Reporte:</strong> Art. 102 del Estatuto Orgánico del Sistema Financiero y Ley 526 de 1999 (creación de la UIAF).<br>
+                • <strong>Reserva Legal:</strong> El Art. 42 de la Ley 190 de 1995 prohíbe informar al cliente o a terceros que se envió un reporte a la UIAF.<br>
+                • <strong>Sanción:</strong> Violar la reserva constituye el delito de "Avisar o Alertar" (Tipping-off), con responsabilidad penal y disciplinaria.`
+            },
+            {
+                keys: ["terrorismo", "financiacion del terrorismo", "articulo 345"],
+                question: "¿Qué artículo sanciona la Financiación del Terrorismo en Colombia?",
+                answer: `El Art. 345 del Código Penal (modificado por la Ley 1453 de 2011):<br>
+                • <strong>Pena de Prisión:</strong> De 13 a 22 años.<br>
+                • <strong>Multa:</strong> De 1.300 a 15.000 SMMLV.<br>
+                • <strong>Congelamiento de Activos:</strong> Según la Ley 1577 de 2012, congelamiento preventivo inmediato de activos de personas en listas del Consejo de Seguridad de la ONU.`
+            },
+            {
+                keys: ["lista clinton", "ofac", "lista restrictiva"],
+                question: "¿Qué es la Lista Clinton y qué se hace si un cliente aparece en ella?",
+                answer: `La <strong>Lista OFAC (Lista Clinton)</strong> es emitida por la Oficina de Control de Activos Extranjeros del Tesoro de EE. UU.<br>
+                Acción inmediata si un cliente coincide: bloqueo de la vinculación o transacción, congelamiento preventivo de activos, y generación prioritaria de un ROS a la UIAF.<br>
+                Incumplir esto genera aislamiento del sistema financiero internacional y terminación de contratos con corresponsales bancarios.`
+            },
+            {
+                keys: ["oficial de cumplimiento", "funciones", "responsabilidad"],
+                question: "¿Cuáles son las funciones y responsabilidad legal del Oficial de Cumplimiento?",
+                answer: `Es la persona designada por la Junta Directiva para liderar la gestión del riesgo SARLAFT/SAGRILAFT.<br>
+                • <strong>Funciones:</strong> diseñar el manual de procedimientos, monitorear transacciones, capacitar al personal e informar a la Junta Directiva.<br>
+                • <strong>Responsabilidad:</strong> si omite funciones o encubre actividades ilícitas, puede responder penalmente y asumir multas personales de hasta 2.000 SMMLV.`
+            },
+            {
+                keys: ["modus operandi", "tipologia", "pitufeo", "smurfing", "testaferrato", "empresa fachada"],
+                question: "¿Cuáles son las modalidades más comunes para lavar dinero?",
+                answer: `Según la UIAF:<br>
+                • <strong>Smurfing o Pitufeo:</strong> fraccionar sumas grandes en transacciones menores al umbral de reporte ($10.000.000 COP en efectivo).<br>
+                • <strong>Empresas Fachada:</strong> sociedades que simulan actividad comercial para justificar dinero ilícito.<br>
+                • <strong>Sobre/Subfacturación en Comercio Exterior:</strong> alterar precios de importación/exportación para mover fondos ilícitos.<br>
+                • <strong>Testaferrato:</strong> usar la identidad de terceros para registrar bienes comprados con capital ilegal.`
+            }
+        ];
+
+        function renderFaqBank() {
+            const container = document.getElementById('faq-list');
+            container.innerHTML = faqBank.map((item, i) => `
+                <details class="bg-white border border-slate-200 rounded-lg p-4 group">
+                    <summary class="cursor-pointer text-sm font-semibold text-slate-800 flex justify-between items-center">
+                        ${item.question}
+                        <i class="fa-solid fa-chevron-down text-xs text-slate-400 group-open:rotate-180 transition-transform"></i>
+                    </summary>
+                    <p class="text-xs text-slate-600 mt-3 leading-relaxed">${item.answer}</p>
+                </details>
+            `).join('');
+        }
+
+        // ============================================================
+        // Chatbot: intenta usar la IA (backend /api/chat); si falla,
+        // cae al banco de preguntas local por coincidencia de palabras.
+        // ============================================================
+        let chatHistory = [];
+        let aiAvailable = true;
+
+        function handleChatSubmit(e) {
+            e.preventDefault();
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            if (!message) return;
+
+            addMessage(message, 'user');
+            input.value = '';
+            sendToBot(message);
+        }
+
+        function sendSuggested(text) {
+            addMessage(text, 'user');
+            sendToBot(text);
+        }
+
+        async function sendToBot(message) {
+            const typingId = showTyping();
+            let replyHtml;
+
+            if (aiAvailable) {
+                try {
+                    const res = await fetch('/api/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message, history: chatHistory })
+                    });
+                    const data = await res.json();
+
+                    if (!res.ok) throw new Error(data.error || 'Error de la API');
+
+                    replyHtml = formatText(data.reply);
+                    chatHistory.push({ role: 'user', parts: [{ text: message }] });
+                    chatHistory.push({ role: 'model', parts: [{ text: data.reply }] });
+                    setStatus(true);
+                } catch (err) {
+                    console.warn('Fallo la IA, usando respaldo local:', err.message);
+                    aiAvailable = false;
+                    setStatus(false);
+                    replyHtml = getLocalFallback(message);
+                }
+            } else {
+                replyHtml = getLocalFallback(message);
+            }
+
+            removeTyping(typingId);
+            addMessage(replyHtml, 'bot');
+        }
+
+        function getLocalFallback(input) {
+            const lower = input.toLowerCase();
+            for (const item of faqBank) {
+                if (item.keys.some(k => lower.includes(k))) {
+                    return item.answer + `<br><br><span class="text-[10px] text-slate-400">(Respuesta del banco local — la IA no está disponible en este momento)</span>`;
+                }
+            }
+            return `No tengo una IA disponible en este momento, pero puedo ayudarte con el banco de preguntas frecuentes sobre: sanciones, ROS/UIAF, financiación del terrorismo, Lista Clinton, Oficial de Cumplimiento y modus operandi. Revisa la sección "Banco de Preguntas Frecuentes" arriba.`;
+        }
+
+        function formatText(text) {
+            // Convierte **negrita** y saltos de línea del texto de la IA a HTML simple
+            return text
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n\s*[-•]\s*/g, '<br>• ')
+                .replace(/\n/g, '<br>');
+        }
+
+        function showTyping() {
+            const container = document.getElementById('chat-messages');
+            const id = 'typing-' + Date.now();
+            const div = document.createElement('div');
+            div.id = id;
+            div.className = 'flex items-start space-x-3';
+            div.innerHTML = `
+                <div class="bg-blue-600 text-white rounded-full p-2 text-xs">
+                    <i class="fa-solid fa-robot"></i>
+                </div>
+                <div class="bg-slate-100 text-slate-800 p-3.5 rounded-2xl rounded-tl-none text-sm flex gap-1">
+                    <span class="typing-dot">●</span><span class="typing-dot">●</span><span class="typing-dot">●</span>
+                </div>`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+            return id;
+        }
+
+        function removeTyping(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        function setStatus(online) {
+            const dot = document.getElementById('status-dot');
+            const badge = document.getElementById('status-badge');
+            if (online) {
+                dot.className = 'w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse';
+                badge.textContent = 'IA en línea';
+            } else {
+                dot.className = 'w-2.5 h-2.5 bg-amber-400 rounded-full';
+                badge.textContent = 'Modo local (sin IA)';
+            }
+        }
+
+        function addMessage(text, sender) {
+            const container = document.getElementById('chat-messages');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = sender === 'user' ? 'flex justify-end' : 'flex items-start space-x-3';
+
+            if (sender === 'user') {
+                msgDiv.innerHTML = `
+                    <div class="bg-blue-600 text-white p-3 rounded-2xl rounded-tr-none text-sm max-w-[80%]">
+                        ${text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}
+                    </div>
+                `;
+            } else {
+                msgDiv.innerHTML = `
+                    <div class="bg-blue-600 text-white rounded-full p-2 text-xs">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div class="bg-slate-100 text-slate-800 p-3.5 rounded-2xl rounded-tl-none text-sm max-w-[85%] leading-relaxed">
+                        ${text}
+                    </div>
+                `;
+            }
+
+            container.appendChild(msgDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Init
+        switchTab('sarlaft');
+        renderFaqBank();
+    </script>
+</body>
+</html>

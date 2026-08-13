@@ -1,0 +1,9 @@
+{
+  "name": "riskshield",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Portal de gestión de riesgo (SARLAFT/SARO/SARC/SARI) con chatbot impulsado por IA (Gemini).",
+  "engines": {
+    "node": ">=18"
+  }
+}
