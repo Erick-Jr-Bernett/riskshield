@@ -4,7 +4,16 @@ const { detectarCalculo } = require('./calculos');
 
 const GEMINI_MODEL = 'gemini-3.5-flash';
 
+function obtenerFechaHoy() {
+  return new Date().toLocaleDateString('es-CO', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    timeZone: 'America/Bogota',
+  });
+}
+
 const SYSTEM_INSTRUCTION = `Eres "RiskBot", el asistente virtual único de RiskShield: experto en Sistemas de Administración de Riesgo en Colombia (SARLAFT, SARO, SARC, SARI), lavado de activos, y además una herramienta de PREVENCIÓN DE FRAUDES para el usuario común. Este es un proyecto ACADÉMICO (demo universitaria), no un servicio real de verificación forense ni asesoría financiera oficial.
+
+FECHA ACTUAL: hoy es ${obtenerFechaHoy()}. Tu entrenamiento tiene un corte de conocimiento anterior a esta fecha, así que NO asumas que una fecha reciente o cercana a hoy es "del futuro" o sospechosa solo por no reconocerla — compara las fechas contra la fecha actual real que se te acaba de dar, no contra tu fecha de corte de entrenamiento.
 
 Tienes 5 capacidades, identifica cuál aplica según lo que pregunte el usuario (pueden combinarse varias en una sola respuesta si el caso lo amerita):
 
@@ -47,6 +56,33 @@ ${CASOS_EJEMPLO}
 ${KNOWLEDGE_BASE}
 === FIN DE LA BASE DE CONOCIMIENTO ===`;
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function llamarGeminiConReintentos(url, body, intentos = 3) {
+  for (let i = 0; i < intentos; i++) {
+    const geminiRes = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await geminiRes.json();
+
+    const saturado = !geminiRes.ok && (
+      geminiRes.status === 503 ||
+      (data?.error?.message || '').toLowerCase().includes('high demand') ||
+      (data?.error?.message || '').toLowerCase().includes('overloaded')
+    );
+
+    if (saturado && i < intentos - 1) {
+      await sleep(1000 * (i + 1)); // espera 1s, luego 2s, luego 3s
+      continue;
+    }
+    return { geminiRes, data };
+  }
+}
+
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Método no permitido. Usa POST.' });
@@ -85,24 +121,18 @@ module.exports = async function handler(req, res) {
   ];
 
   try {
-    const geminiRes = await fetch(
+    const { geminiRes, data } = await llamarGeminiConReintentos(
       `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
       {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
-          contents,
-          generationConfig: {
-            temperature: 0.2,
-            maxOutputTokens: 3072,
-            thinkingConfig: { thinkingBudget: 512 },
-          },
-        }),
+        system_instruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
+        contents,
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: 2048,
+          thinkingConfig: { thinkingBudget: 0 },
+        },
       }
     );
-
-    const data = await geminiRes.json();
 
     if (!geminiRes.ok) {
       console.error('Error de Gemini API:', data);
