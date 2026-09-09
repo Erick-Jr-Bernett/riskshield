@@ -8,14 +8,26 @@ cumplimiento, usando IA (Google Gemini, capa gratuita) con respaldo local si la 
 
 ```
 riskshield/
-├── index.html          → Página principal (frontend, sin build necesario)
+├── index.html               → Página principal (frontend, sin build necesario)
+│                                Incluye: Sistemas de Riesgo, Banco de FAQ, Herramientas
+│                                (Detector/Calculadora/Escáner/Verificador) y el Chatbot
+├── assets/                   → Logo y favicons
 ├── api/
-│   ├── chat.js          → Función serverless: recibe la pregunta y consulta a Gemini
-│   └── knowledge-base.js → Base de conocimiento (contenido del PDF de riesgos)
+│   ├── chat.js                → Chatbot general de SARLAFT/SARO/SARC/SARI
+│   ├── detector.js            → Punto 1: Detector de mensajes sospechosos
+│   ├── scanner.js             → Punto 3: Escáner "¿cómo me ve el banco?"
+│   ├── verificador.js         → Punto 4: Verificador doble (empresa / comprobante)
+│   ├── casos-ejemplo.js       → Casos de ejemplo (OmegaPro, etc.) para el Verificador
+│   ├── _gemini-client.js      → Lógica compartida para llamar a Gemini (no es un endpoint)
+│   └── knowledge-base.js      → Base de conocimiento (contenido del PDF de riesgos)
 ├── package.json
-├── .env.example          → Plantilla de variables de entorno
+├── .env.example               → Plantilla de variables de entorno
 └── .gitignore
 ```
+
+> Nota: la **Calculadora de Usura (punto 2)** no usa IA — es un cálculo matemático puro
+> en el navegador (JavaScript), para que el resultado sea siempre exacto y no dependa de
+> que la IA "sepa" hacer bien las cuentas.
 
 ## 1. Obtener la API Key gratuita de Gemini
 
@@ -79,3 +91,22 @@ El proyecto está separado a propósito para que cambiar de IA sea sencillo:
 - Solo se edita `api/chat.js` (la llamada a la API).
 - `api/knowledge-base.js` y el `index.html` no necesitan tocarse.
 - Solo cambia la variable de entorno en Vercel por la key del nuevo proveedor.
+
+## Herramientas adicionales (puntos 1-4)
+
+Todas viven en la sección **"Herramientas de Verificación Financiera"** de la página, y llevan
+un aviso visible de que es una **demo académica**, no un servicio real de verificación:
+
+1. **Detector de Mensajes Sospechosos** (`api/detector.js`) — pega un texto/SMS/WhatsApp y la IA evalúa señales de fraude (gota a gota, phishing, pirámides).
+2. **Calculadora de Usura** (cálculo en `index.html`, sin backend) — compara la tasa efectiva del préstamo contra la tasa de usura vigente en Colombia. No usa IA a propósito, para que el número sea siempre exacto.
+3. **Escáner "¿Cómo me ve el banco?"** (`api/scanner.js`) — describes tu negocio y la IA simula qué alertas dispararía en un sistema SARLAFT real.
+4. **Verificador Doble** (`api/verificador.js`):
+   - *Ruta A (empresa)*: la IA responde con base en casos de ejemplo conocidos (`api/casos-ejemplo.js`), dejando claro que no consulta la base de datos oficial en vivo de la Superfinanciera.
+   - *Ruta B (comprobante)*: subes una foto de un comprobante de pago; Gemini (con visión) señala inconsistencias visuales, sin afirmar con certeza absoluta que sea falso o verdadero.
+
+### Actualizar la tasa de usura
+
+La Calculadora de Usura usa una constante `TASA_USURA_ANUAL` dentro del `<script>` de `index.html`
+(actualmente 29.24% E.A., vigente para crédito de consumo/ordinario según la Superfinanciera,
+Resolución 1260 de 2026). Esta tasa **cambia periódicamente** — para mantenerla vigente hay que
+revisar el valor actual en superfinanciera.gov.co y actualizar esa constante.

@@ -4,13 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RiskShield - Portal Integral de Gestión de Riesgo</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-     <!-- Favicon -->
+
+    <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon-180.png">
     <link rel="icon" type="image/png" sizes="192x192" href="/assets/favicon-192.png">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -18,6 +21,16 @@
             border-bottom: 3px solid #2563eb;
             color: #2563eb;
             font-weight: 600;
+        }
+        .active-tool-tab {
+            border-bottom: 3px solid #2563eb;
+            color: #2563eb;
+            font-weight: 600;
+        }
+        .active-route-tab {
+            background-color: #2563eb;
+            color: white;
+            border-color: #2563eb;
         }
         .chat-scroll::-webkit-scrollbar {
             width: 6px;
@@ -135,6 +148,18 @@
                         <button onclick="sendSuggested('¿Cuáles son las funciones del Oficial de Cumplimiento?')" class="block w-full text-left bg-white border border-blue-200 hover:bg-blue-100 p-2 rounded text-blue-700 transition">
                             • Rol del Oficial de Cumplimiento
                         </button>
+                        <button onclick="sendSuggested('Hola, te prestamos $2M sin datacrédito, entra a http://bit.ly/platafacil')" class="block w-full text-left bg-white border border-blue-200 hover:bg-blue-100 p-2 rounded text-blue-700 transition">
+                            • Analizar un mensaje sospechoso
+                        </button>
+                        <button onclick="sendSuggested('Me prestaron $500.000 y pago $20.000 diarios por 30 días, ¿es usura?')" class="block w-full text-left bg-white border border-blue-200 hover:bg-blue-100 p-2 rounded text-blue-700 transition">
+                            • Calcular si es usura
+                        </button>
+                        <button onclick="sendSuggested('¿OmegaPro es confiable para invertir?')" class="block w-full text-left bg-white border border-blue-200 hover:bg-blue-100 p-2 rounded text-blue-700 transition">
+                            • Verificar una empresa
+                        </button>
+                        <button onclick="sendSuggested('Me dijeron: si no pagas hoy pierdes tu cupo. ¿Qué opinas?')" class="block w-full text-left bg-white border border-blue-200 hover:bg-blue-100 p-2 rounded text-blue-700 transition">
+                            • Analizar presión/manipulación
+                        </button>
                     </div>
                 </div>
             </div>
@@ -162,9 +187,19 @@
                 </div>
 
                 <!-- Input Box -->
-                <form id="chat-form" onsubmit="handleChatSubmit(event)" class="p-3 border-t border-slate-200 flex gap-2">
-                    <input type="text" id="chat-input" placeholder="Pregunta sobre leyes, consecuencias, modus operandi o riesgos..."
-                           class="flex-grow border border-slate-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500">
+                <div id="chat-image-preview" class="px-3 pt-2 hidden">
+                    <div class="relative inline-block">
+                        <img id="chat-image-preview-img" src="" class="h-16 rounded border border-slate-300">
+                        <button type="button" onclick="clearChatImage()" class="absolute -top-2 -right-2 bg-slate-800 text-white rounded-full w-5 h-5 text-xs">×</button>
+                    </div>
+                </div>
+                <form id="chat-form" onsubmit="handleChatSubmit(event)" class="p-3 border-t border-slate-200 flex gap-2 items-center">
+                    <label class="cursor-pointer text-slate-400 hover:text-blue-600 transition px-1" title="Adjuntar comprobante">
+                        <i class="fa-solid fa-paperclip"></i>
+                        <input type="file" id="chat-image-input" accept="image/*" class="hidden" onchange="handleChatImageSelected(event)">
+                    </label>
+                    <input type="text" id="chat-input" placeholder="Pregunta, pega un mensaje sospechoso, o adjunta un comprobante..."
+                        class="flex-grow border border-slate-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500">
                     <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1">
                         <span>Enviar</span> <i class="fa-solid fa-paper-plane text-xs"></i>
                     </button>
@@ -334,16 +369,37 @@
         // ============================================================
         let chatHistory = [];
         let aiAvailable = true;
+        let chatPendingImage = null;
+
+        function handleChatImageSelected(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                chatPendingImage = { base64: reader.result.split(',')[1], mimeType: file.type, previewUrl: reader.result };
+                document.getElementById('chat-image-preview-img').src = reader.result;
+                document.getElementById('chat-image-preview').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearChatImage() {
+            chatPendingImage = null;
+            document.getElementById('chat-image-input').value = '';
+            document.getElementById('chat-image-preview').classList.add('hidden');
+        }
 
         function handleChatSubmit(e) {
             e.preventDefault();
             const input = document.getElementById('chat-input');
             const message = input.value.trim();
-            if (!message) return;
+            const image = chatPendingImage;
+            if (!message && !image) return;
 
-            addMessage(message, 'user');
+            addMessage(message || '(Comprobante adjunto)', 'user', image ? image.previewUrl : null);
             input.value = '';
-            sendToBot(message);
+            clearChatImage();
+            sendToBot(message, image);
         }
 
         function sendSuggested(text) {
@@ -351,7 +407,7 @@
             sendToBot(text);
         }
 
-        async function sendToBot(message) {
+        async function sendToBot(message, image) {
             const typingId = showTyping();
             let replyHtml;
 
@@ -360,30 +416,34 @@
                     const res = await fetch('/api/chat', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ message, history: chatHistory })
+                        body: JSON.stringify({
+                            message,
+                            history: chatHistory,
+                            imageBase64: image ? image.base64 : undefined,
+                            imageMimeType: image ? image.mimeType : undefined
+                        })
                     });
                     const data = await res.json();
-
                     if (!res.ok) throw new Error(data.error || 'Error de la API');
 
                     replyHtml = formatText(data.reply);
-                    chatHistory.push({ role: 'user', parts: [{ text: message }] });
+                    chatHistory.push({ role: 'user', parts: [{ text: message || '(comprobante adjunto)' }] });
                     chatHistory.push({ role: 'model', parts: [{ text: data.reply }] });
                     setStatus(true);
                 } catch (err) {
                     console.warn('Fallo la IA, usando respaldo local:', err.message);
                     aiAvailable = false;
                     setStatus(false);
-                    replyHtml = getLocalFallback(message);
+                    replyHtml = getLocalFallback(message || '');
                 }
             } else {
-                replyHtml = getLocalFallback(message);
+                replyHtml = getLocalFallback(message || '');
             }
 
             removeTyping(typingId);
             addMessage(replyHtml, 'bot');
         }
-
+        
         function getLocalFallback(input) {
             const lower = input.toLowerCase();
             for (const item of faqBank) {
@@ -438,7 +498,7 @@
             }
         }
 
-        function addMessage(text, sender) {
+        function addMessage(text, sender, imageUrl) {
             const container = document.getElementById('chat-messages');
             const msgDiv = document.createElement('div');
             msgDiv.className = sender === 'user' ? 'flex justify-end' : 'flex items-start space-x-3';
@@ -446,22 +506,216 @@
             if (sender === 'user') {
                 msgDiv.innerHTML = `
                     <div class="bg-blue-600 text-white p-3 rounded-2xl rounded-tr-none text-sm max-w-[80%]">
+                        ${imageUrl ? `<img src="${imageUrl}" class="rounded-lg mb-2 max-h-40">` : ''}
                         ${text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}
-                    </div>
-                `;
+                    </div>`;
             } else {
                 msgDiv.innerHTML = `
-                    <div class="bg-blue-600 text-white rounded-full p-2 text-xs">
-                        <i class="fa-solid fa-robot"></i>
-                    </div>
-                    <div class="bg-slate-100 text-slate-800 p-3.5 rounded-2xl rounded-tl-none text-sm max-w-[85%] leading-relaxed">
-                        ${text}
-                    </div>
-                `;
+                    <div class="bg-blue-600 text-white rounded-full p-2 text-xs"><i class="fa-solid fa-robot"></i></div>
+                    <div class="bg-slate-100 text-slate-800 p-3.5 rounded-2xl rounded-tl-none text-sm max-w-[85%] leading-relaxed">${text}</div>`;
             }
-
             container.appendChild(msgDiv);
             container.scrollTop = container.scrollHeight;
+        }
+
+        // ============================================================
+        // Herramientas de Verificación Financiera (puntos 1-4)
+        // ============================================================
+
+        // --- Utilidad común: pintar resultado con formato + estado de carga ---
+        function showLoading(elId, label) {
+            document.getElementById(elId).innerHTML = `
+                <div class="flex items-center gap-2 text-slate-500">
+                    <i class="fa-solid fa-spinner fa-spin"></i> ${label}
+                </div>`;
+        }
+
+        function showResultBox(elId, html, tone = 'slate') {
+            const tones = {
+                slate: 'bg-slate-50 border-slate-200 text-slate-700',
+                red: 'bg-red-50 border-red-200 text-red-800',
+                amber: 'bg-amber-50 border-amber-200 text-amber-800',
+                green: 'bg-green-50 border-green-200 text-green-800',
+            };
+            document.getElementById(elId).innerHTML = `
+                <div class="border rounded-lg p-4 leading-relaxed ${tones[tone]}">${html}</div>`;
+        }
+
+        function showErrorBox(elId, message) {
+            showResultBox(elId, `<i class="fa-solid fa-circle-exclamation mr-1"></i> ${message}`, 'red');
+        }
+
+        // Convierte el texto plano de la IA (con encabezados tipo "NIVEL: X") a HTML legible
+        function formatToolReply(text) {
+            return formatText(text); // reutiliza el formateador de negrita/saltos de línea ya definido para el chat
+        }
+
+        function toneFromNivel(text) {
+            const lower = text.toLowerCase();
+            if (lower.includes('crítico') || lower.includes('alto')) return 'red';
+            if (lower.includes('medio')) return 'amber';
+            if (lower.includes('bajo')) return 'green';
+            return 'slate';
+        }
+
+        function switchTool(tool) {
+            document.querySelectorAll('.tool-panel').forEach(p => p.classList.add('hidden'));
+            document.getElementById(`panel-${tool}`).classList.remove('hidden');
+            document.querySelectorAll('[id^="tool-tab-"]').forEach(btn => {
+                btn.className = "pb-3 text-sm font-medium text-slate-500 hover:text-slate-700 whitespace-nowrap px-1";
+            });
+            document.getElementById(`tool-tab-${tool}`).className = "active-tool-tab pb-3 text-sm font-medium whitespace-nowrap px-1";
+        }
+
+        // --- 1. Detector de mensajes sospechosos ---
+        async function runDetector() {
+            const input = document.getElementById('detector-input').value.trim();
+            if (!input) return;
+            showLoading('detector-result', 'Analizando patrones de fraude...');
+            try {
+                const res = await fetch('/api/detector', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: input })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Error al analizar');
+                showResultBox('detector-result', formatToolReply(data.reply), toneFromNivel(data.reply));
+            } catch (err) {
+                showErrorBox('detector-result', 'No se pudo conectar con la IA. Intenta de nuevo en un momento.');
+            }
+        }
+
+        // --- 2. Calculadora de usura (cálculo 100% local, sin IA, para que sea exacto) ---
+        const TASA_USURA_ANUAL = 0.2924; // 29.24% E.A. vigente para consumo/ordinario (Superfinanciera, referencia sep. 2026)
+
+        function runCalculadoraUsura() {
+            const monto = parseFloat(document.getElementById('usura-monto').value);
+            const total = parseFloat(document.getElementById('usura-total').value);
+            const dias = parseFloat(document.getElementById('usura-dias').value);
+
+            if (!monto || !total || !dias || monto <= 0 || total <= 0 || dias <= 0) {
+                showErrorBox('usura-result', 'Completa monto prestado, total a pagar y plazo en días con valores válidos.');
+                return;
+            }
+
+            const interesCobrado = total - monto;
+            const tasaPeriodo = interesCobrado / monto; // tasa efectiva durante todo el plazo
+            const tasaDiaria = Math.pow(1 + tasaPeriodo, 1 / dias) - 1;
+            const tasaMensualEfectiva = Math.pow(1 + tasaDiaria, 30) - 1;
+            const tasaAnualEfectiva = Math.pow(1 + tasaDiaria, 365) - 1;
+
+            const tasaUsuraMensual = Math.pow(1 + TASA_USURA_ANUAL, 1 / 12) - 1;
+            const veces = tasaAnualEfectiva / TASA_USURA_ANUAL;
+            const esUsura = tasaAnualEfectiva > TASA_USURA_ANUAL;
+
+            const html = `
+                <p><strong>Interés cobrado:</strong> $${interesCobrado.toLocaleString('es-CO')} COP</p>
+                <p><strong>Tasa mensual efectiva:</strong> ${(tasaMensualEfectiva * 100).toFixed(2)}% (legal: ${(tasaUsuraMensual * 100).toFixed(2)}%)</p>
+                <p><strong>Tasa anual efectiva equivalente:</strong> ${(tasaAnualEfectiva * 100).toFixed(1)}% (tope legal: ${(TASA_USURA_ANUAL * 100).toFixed(2)}%)</p>
+                <p class="mt-2 font-semibold">${esUsura
+                    ? `⚠️ Esto es <u>${veces.toFixed(1)} veces</u> la tasa máxima legal. Configura como posible delito de <strong>usura (Art. 305 del Código Penal)</strong>.`
+                    : `✅ Esta tasa está dentro del límite legal vigente.`}</p>
+                <p class="text-[10px] mt-2 opacity-70">Cálculo con interés compuesto sobre el plazo indicado. Referencia informativa, no es un concepto jurídico.</p>
+            `;
+            showResultBox('usura-result', html, esUsura ? 'red' : 'green');
+        }
+
+        // --- 3. Escáner ¿cómo me ve el banco? ---
+        async function runScanner() {
+            const input = document.getElementById('escaner-input').value.trim();
+            if (!input) return;
+            showLoading('scanner-result', 'Simulando análisis SARLAFT...');
+            try {
+                const res = await fetch('/api/scanner', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: input })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Error al analizar');
+                showResultBox('scanner-result', formatToolReply(data.reply), toneFromNivel(data.reply));
+            } catch (err) {
+                showErrorBox('scanner-result', 'No se pudo conectar con la IA. Intenta de nuevo en un momento.');
+            }
+        }
+
+        // --- 4. Verificador doble ---
+        function switchVerificadorRoute(route) {
+            document.getElementById('ver-panel-empresa').classList.toggle('hidden', route !== 'empresa');
+            document.getElementById('ver-panel-comprobante').classList.toggle('hidden', route !== 'comprobante');
+            document.getElementById('ver-route-empresa').className = route === 'empresa'
+                ? 'active-route-tab text-xs font-semibold px-3 py-1.5 rounded-full border'
+                : 'text-xs font-semibold px-3 py-1.5 rounded-full border text-slate-500 border-slate-300';
+            document.getElementById('ver-route-comprobante').className = route === 'comprobante'
+                ? 'active-route-tab text-xs font-semibold px-3 py-1.5 rounded-full border'
+                : 'text-xs font-semibold px-3 py-1.5 rounded-full border text-slate-500 border-slate-300';
+            document.getElementById('verificador-result').innerHTML = '';
+        }
+
+        async function runVerificadorEmpresa() {
+            const input = document.getElementById('verificador-empresa-input').value.trim();
+            if (!input) return;
+            showLoading('verificador-result', 'Buscando en casos conocidos...');
+            try {
+                const res = await fetch('/api/verificador', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'empresa', message: input })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Error al verificar');
+                showResultBox('verificador-result', formatToolReply(data.reply), 'slate');
+            } catch (err) {
+                showErrorBox('verificador-result', 'No se pudo conectar con la IA. Intenta de nuevo en un momento.');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const fileInput = document.getElementById('verificador-imagen-input');
+            if (fileInput) {
+                fileInput.addEventListener('change', () => {
+                    const file = fileInput.files[0];
+                    const preview = document.getElementById('verificador-imagen-preview');
+                    if (file) {
+                        preview.innerHTML = `<img src="${URL.createObjectURL(file)}" class="mt-2 max-h-40 rounded border border-slate-200">`;
+                    } else {
+                        preview.innerHTML = '';
+                    }
+                });
+            }
+        });
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function runVerificadorComprobante() {
+            const fileInput = document.getElementById('verificador-imagen-input');
+            const file = fileInput.files[0];
+            if (!file) {
+                showErrorBox('verificador-result', 'Sube primero una imagen del comprobante.');
+                return;
+            }
+            showLoading('verificador-result', 'Analizando la imagen...');
+            try {
+                const base64 = await fileToBase64(file);
+                const res = await fetch('/api/verificador', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'comprobante', imageBase64: base64, imageMimeType: file.type })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Error al analizar la imagen');
+                showResultBox('verificador-result', formatToolReply(data.reply), 'slate');
+            } catch (err) {
+                showErrorBox('verificador-result', 'No se pudo conectar con la IA. Intenta de nuevo en un momento.');
+            }
         }
 
         // Init
