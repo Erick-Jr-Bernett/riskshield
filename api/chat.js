@@ -2,7 +2,8 @@ const { KNOWLEDGE_BASE } = require('./knowledge-base');
 const { CASOS_EJEMPLO } = require('./casos-ejemplo');
 const { detectarCalculo } = require('./calculos');
 
-const GEMINI_MODEL = 'gemini-3.5-flash';
+// Si el primero está saturado, se intenta con el siguiente de la lista, en orden.
+const MODELOS_RESPALDO = ['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-2.0-flash'];
 
 function obtenerFechaHoy() {
   return new Date().toLocaleDateString('es-CO', {
@@ -60,27 +61,45 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function llamarGeminiConReintentos(url, body, intentos = 3) {
-  for (let i = 0; i < intentos; i++) {
-    const geminiRes = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    const data = await geminiRes.json();
+function esErrorDeSaturacion(geminiRes, data) {
+  if (geminiRes.ok) return false;
+  const msg = (data?.error?.message || '').toLowerCase();
+  return geminiRes.status === 503 || msg.includes('high demand') || msg.includes('overloaded');
+}
 
-    const saturado = !geminiRes.ok && (
-      geminiRes.status === 503 ||
-      (data?.error?.message || '').toLowerCase().includes('high demand') ||
-      (data?.error?.message || '').toLowerCase().includes('overloaded')
-    );
+// Prueba cada modelo de MODELOS_RESPALDO en orden. Para cada uno, reintenta
+// un par de veces si está saturado antes de pasar al siguiente modelo.
+async function llamarGeminiConRespaldo(apiKey, body) {
+  let ultimoResultado = null;
 
-    if (saturado && i < intentos - 1) {
-      await sleep(1000 * (i + 1)); // espera 1s, luego 2s, luego 3s
-      continue;
+  for (const modelo of MODELOS_RESPALDO) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${apiKey}`;
+
+    for (let intento = 0; intento < 2; intento++) {
+      const geminiRes = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await geminiRes.json();
+      ultimoResultado = { geminiRes, data, modelo };
+
+      if (geminiRes.ok) return ultimoResultado;
+
+      if (esErrorDeSaturacion(geminiRes, data)) {
+        console.warn(`Modelo ${modelo} saturado (intento ${intento + 1}), reintentando...`);
+        await sleep(700 * (intento + 1));
+        continue; // reintenta el mismo modelo una vez más
+      }
+
+      // Error que no es de saturación (ej. API key inválida, request mal formado):
+      // no tiene sentido seguir intentando con otros modelos, se corta ya.
+      return ultimoResultado;
     }
-    return { geminiRes, data };
+    // Se agotaron los reintentos de este modelo por saturación, prueba el siguiente.
   }
+
+  return ultimoResultado; // todos los modelos fallaron, devuelve el último error para reportarlo
 }
 
 module.exports = async function handler(req, res) {
@@ -121,24 +140,24 @@ module.exports = async function handler(req, res) {
   ];
 
   try {
-    const { geminiRes, data } = await llamarGeminiConReintentos(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-      {
-        system_instruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
-        contents,
-        generationConfig: {
-          temperature: 0.2,
-          maxOutputTokens: 2048,
-          thinkingConfig: { thinkingBudget: 0 },
-        },
-      }
-    );
+    const resultado = await llamarGeminiConRespaldo(apiKey, {
+      system_instruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
+      contents,
+      generationConfig: {
+        temperature: 0.2,
+        maxOutputTokens: 2048,
+        thinkingConfig: { thinkingBudget: 0 },
+      },
+    });
 
-    if (!geminiRes.ok) {
-      console.error('Error de Gemini API:', data);
-      res.status(502).json({ error: data?.error?.message || 'Error al consultar la IA. Intenta de nuevo.' });
+    if (!resultado || !resultado.geminiRes.ok) {
+      console.error('Error de Gemini API (todos los modelos fallaron):', resultado?.data);
+      res.status(502).json({ error: resultado?.data?.error?.message || 'Todos los modelos están saturados en este momento. Intenta de nuevo en unos segundos.' });
       return;
     }
+
+    const { geminiRes, data, modelo } = resultado;
+    console.log(`Respondido por: ${modelo}`);
 
     const candidate = data?.candidates?.[0];
     let text = candidate?.content?.parts?.map((p) => p.text).join('') || 'No pude generar una respuesta en este momento.';
