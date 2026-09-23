@@ -3,7 +3,7 @@ const { CASOS_EJEMPLO } = require('./casos-ejemplo');
 const { detectarCalculo } = require('./calculos');
 
 // Si el primero está saturado, se intenta con el siguiente de la lista, en orden.
-const MODELOS_RESPALDO = ['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-2.0-flash'];
+const MODELOS_RESPALDO = ['gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.5-flash-lite'];
 
 function obtenerFechaHoy() {
   return new Date().toLocaleDateString('es-CO', {
