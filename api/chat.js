@@ -67,14 +67,21 @@ function esErrorDeSaturacion(geminiRes, data) {
   return geminiRes.status === 503 || msg.includes('high demand') || msg.includes('overloaded');
 }
 
-// Prueba cada modelo de MODELOS_RESPALDO en orden. Para cada uno, reintenta
-// un par de veces si está saturado antes de pasar al siguiente modelo.
+function esCuotaAgotada(geminiRes, data) {
+  if (geminiRes.ok) return false;
+  const msg = (data?.error?.message || '').toLowerCase();
+  return geminiRes.status === 429 || msg.includes('quota') || msg.includes('exceeded');
+}
+
 async function llamarGeminiConRespaldo(apiKey, body) {
   let ultimoResultado = null;
 
   for (const modelo of MODELOS_RESPALDO) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${apiKey}`;
 
+    // Si la cuota de este modelo ya está agotada, no tiene caso reintentar
+    // el mismo modelo (esperar no sirve, el cupo no vuelve pronto) —
+    // pasa directo al siguiente modelo de la lista.
     for (let intento = 0; intento < 2; intento++) {
       const geminiRes = await fetch(url, {
         method: 'POST',
@@ -86,20 +93,23 @@ async function llamarGeminiConRespaldo(apiKey, body) {
 
       if (geminiRes.ok) return ultimoResultado;
 
+      if (esCuotaAgotada(geminiRes, data)) {
+        console.warn(`Modelo ${modelo} sin cuota disponible, pasando al siguiente modelo...`);
+        break; // no reintentes este modelo, ve directo al siguiente de la lista
+      }
+
       if (esErrorDeSaturacion(geminiRes, data)) {
         console.warn(`Modelo ${modelo} saturado (intento ${intento + 1}), reintentando...`);
         await sleep(700 * (intento + 1));
         continue; // reintenta el mismo modelo una vez más
       }
 
-      // Error que no es de saturación (ej. API key inválida, request mal formado):
-      // no tiene sentido seguir intentando con otros modelos, se corta ya.
+      // Error distinto (key inválida, request mal formado, etc.): no sigas intentando.
       return ultimoResultado;
     }
-    // Se agotaron los reintentos de este modelo por saturación, prueba el siguiente.
   }
 
-  return ultimoResultado; // todos los modelos fallaron, devuelve el último error para reportarlo
+  return ultimoResultado; // todos los modelos fallaron, devuelve el último error
 }
 
 module.exports = async function handler(req, res) {
